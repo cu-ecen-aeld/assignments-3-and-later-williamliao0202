@@ -75,7 +75,9 @@ bool do_exec(int count, ...)
     pid = fork();
 
     if (pid == -1)
+    {
         return false;
+    }
     else if (pid == 0)
     {
         int ret = execv(command[0], command);
@@ -92,9 +94,13 @@ bool do_exec(int count, ...)
     else if (WIFEXITED(status))
     {
 	    if (WEXITSTATUS(status) != 0)
+        {
 		    return false;
+        }
 	    else
+        {
 		    return true;
+        }
     }
     else
     {
@@ -133,17 +139,22 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
     int status;
     int pid;
     int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
-    if (fd < 0) { perror("open"); return false; }
-    switch (pid = fork()) {
+    if (fd < 0)
+    {
+        perror("open");
+        return false;
+    }
+    switch (pid = fork())
+    {
         case -1:
-            perror("fork"); return false;
+            perror("fork");
+            return false;
         case 0:
             if (dup2(fd, 1) < 0)
             {
                 perror("dup2");
                 exit(-1);
             }
-
             close(fd);
             int ret = execvp(command[0], command);
             if (ret == -1)
@@ -164,7 +175,9 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
                     return false;
                 }
                 else
+                {
                     return true;
+                }
             }
             else
             {

@@ -1,3 +1,11 @@
+#define _XOPEN_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 #include "systemcalls.h"
 
 /**
@@ -16,8 +24,11 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
-
-    return true;
+    int ret = system(cmd);
+    if (ret == 0)
+	    return true;
+    else
+	    return false;
 }
 
 /**
@@ -45,9 +56,10 @@ bool do_exec(int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
+    va_end(args);
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    //command[count] = command[count];
 
 /*
  * TODO:
@@ -58,12 +70,37 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    int status;
+    pid_t pid;
+    pid = fork();
 
-    va_end(args);
+    if (pid == -1)
+        return false;
+    else if (pid == 0)
+    {
+        int ret = execv(command[0], command);
+	    if (ret == -1)
+	    {
+		    exit(-1);
+	    }
+    }
 
-    return true;
+    if (waitpid(pid, &status, 0) == -1)
+    {
+	    return false;
+    }
+    else if (WIFEXITED(status))
+    {
+	    if (WEXITSTATUS(status) != 0)
+		    return false;
+	    else
+		    return true;
+    }
+    else
+    {
+	    return false;
+    }
 }
-
 /**
 * @param outputfile - The full path to the file to write with command output.
 *   This file will be closed at completion of the function call.
@@ -80,9 +117,10 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
         command[i] = va_arg(args, char *);
     }
     command[count] = NULL;
+    va_end(args);
     // this line is to avoid a compile warning before your implementation is complete
     // and may be removed
-    command[count] = command[count];
+    //command[count] = command[count];
 
 
 /*
@@ -92,8 +130,45 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *   The rest of the behaviour is same as do_exec()
  *
 */
+    int status;
+    int pid;
+    int fd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (fd < 0) { perror("open"); return false; }
+    switch (pid = fork()) {
+        case -1:
+            perror("fork"); return false;
+        case 0:
+            if (dup2(fd, 1) < 0)
+            {
+                perror("dup2");
+                exit(-1);
+            }
 
-    va_end(args);
-
-    return true;
+            close(fd);
+            int ret = execvp(command[0], command);
+            if (ret == -1)
+            {
+                perror("execvp");
+                exit(-2);
+            }
+        default:
+            close(fd);
+            if (waitpid(pid, &status, 0) == -1)
+            {
+                return false;
+            }
+            else if (WIFEXITED(status))
+            {
+                if (WEXITSTATUS(status) != 0)
+                {
+                    return false;
+                }
+                else
+                    return true;
+            }
+            else
+            {
+                return false;
+            }
+    }
 }

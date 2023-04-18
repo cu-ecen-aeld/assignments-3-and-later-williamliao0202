@@ -17,23 +17,32 @@ void* threadfunc(void* thread_param)
     //struct thread_data* thread_func_args = (struct thread_data *) thread_param;
     struct thread_data *thread_func_args = (struct thread_data *) thread_param;
     //wait
-    usleep(thread_func_args->wait_to_obtain_ms*1000);
-    //obtain mutex
-    int rc = pthread_mutex_lock(thread_func_args->mutex);
-    if (rc != 0)
+    int rc = 0;
+    if ((rc = usleep(thread_func_args->wait_to_obtain_ms*1000)) != 0)
     {
-        ERROR_LOG("Can not lock. Error Code: %d", rc);
+        ERROR_LOG("Can not sleep for %ud ms, Error Code: %d, %s", thread_func_args->wait_to_obtain_ms, rc, strerror(rc));
+        thread_func_args->thread_complete_success = false;
+        return thread_param;
+    }
+
+    //obtain mutex
+    if ((rc = pthread_mutex_lock(thread_func_args->mutex)) != 0)
+    {
+        ERROR_LOG("Can not lock. Error Code: %d, %s", rc, strerror(rc));
         thread_func_args->thread_complete_success = false;
     }
     else
     {
         //wait
-        usleep(thread_func_args->wait_to_release_ms*1000);
-        //release mutex
-        rc = pthread_mutex_unlock(thread_func_args->mutex);
-        if (rc != 0)
+        if ((rc = usleep(thread_func_args->wait_to_release_ms*1000)) != 0)
         {
-            ERROR_LOG("Can not release. Error Code: %d", rc);
+            ERROR_LOG("Can not sleep for %ud ms, Error Code: %d, %s", thread_func_args->wait_to_release_ms, rc, strerror(rc));
+            thread_func_args->thread_complete_success = false;
+        }
+        //release mute
+        if ((rc = pthread_mutex_unlock(thread_func_args->mutex)) != 0)
+        {
+            ERROR_LOG("Can not release. Error Code: %d, %s", rc, strerror(rc));
             thread_func_args->thread_complete_success = false;
         }
         else

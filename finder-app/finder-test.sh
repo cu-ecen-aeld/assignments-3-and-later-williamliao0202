@@ -62,7 +62,7 @@ OUTPUTSTRING=$(finder.sh "$WRITEDIR" "$WRITESTR")
 # For Assignemnt 4 Part 2
 # Modify your finder-test.sh script to write a file with 
 # output of the finder command to /tmp/assignment4-result.txt
-echo OUTPUTSTRING > /tmp/assignment4-result.txt
+echo $OUTPUTSTRING > /tmp/assignment4-result.txt
 
 # remove temporary directories
 rm -rf /tmp/aeld-data

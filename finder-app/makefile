@@ -4,7 +4,8 @@ CFLAGS=-g -Wall -ansi
 exe=writer
 obj=writer.o
 
-default: $(exe)
+
+all: $(exe)
 
 $(exe): $(obj)
 	$(CC) -o $(exe) $(obj)
